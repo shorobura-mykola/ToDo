@@ -7,8 +7,11 @@
 ![photo_2024-07-29_14-26-09.jpg](images/photo_2024-07-29_14-26-09.jpg)
 ![photo_2024-07-29_14-26-09.jpg](images/photo_2024-08-05_12-57-47.jpg)
 
+## Realise notes:
+
 ### 05/08/2024
 - added calendar page
+- code refactoring
 
 ### 29/07/2024
 - todo list with SD datastorage and open API under http://showorld.local/todo
