@@ -242,7 +242,7 @@ void clearDisplay()
     epd_poweroff();
 }
 
-void displayMainPage()
+void displayMainPage() 
 {
     currentPage = 0;
     currentTopic = -1;
@@ -310,42 +310,146 @@ void displayMainPage()
 
 void displayTodoListPage(int topicIndex)
 {
-    currentPage = topicIndex + 1;
+    currentPage = 1;
     currentTopic = topicIndex;
     clearDisplay();
-
-    // Calculate the y position for centering the to-do items
-    int totalItemsHeight = topics[topicIndex].todoList.size() * 60 + (topics[topicIndex].todoList.size() - 1) * 20; // Adjusted for dynamic size
-    int yPos = (EPD_HEIGHT - totalItemsHeight) / 2;
 
     // Draw back button
     int xPos = 890;
     int yBackPos = 275;
     write_string((GFXfont *)&FiraSans, "✔️", &xPos, &yBackPos, framebuffer);
-    epd_draw_rect(860, 0, 100, EPD_HEIGHT, 0x0000, framebuffer); // Full height back button
+    epd_draw_rect(860, 0, 100, EPD_HEIGHT, 0x0000, framebuffer);
 
-    const int rectWidth = 800;
+    const int rectWidth = 835;
     const int rectHeight = 60;
-    const int checkboxSize = 45; // Make checkbox bigger
-    const int gap = 20;
+    const int checkboxSize = 40;
+    const int gap = 15;
+    int yPos = 20; // Start from the top
     for (size_t i = 0; i < topics[topicIndex].todoList.size(); i++) {
         // Draw checkbox inside the to-do item rectangle
-        int checkboxXPos = 55;
-        int checkboxYPos = yPos; // Adjust position to not overlap
+        int checkboxXPos = 27;
+        int checkboxYPos = yPos + 3; // Adjust position to not overlap
         if (topics[topicIndex].todoList[i].done) {
             epd_draw_rect(checkboxXPos, checkboxYPos, checkboxSize, checkboxSize - 5, 0x0000, framebuffer); // Outer checkbox
-            int checkmarkXPos = checkboxXPos + 5;
+            int checkmarkXPos = checkboxXPos + 2;
             int checkmarkYPos = checkboxYPos + (checkboxSize - 5) / 2 + 15;
             write_string((GFXfont *)&FiraSans, "✔️", &checkmarkXPos, &checkmarkYPos, framebuffer); // Checkmark inside checkbox
         } else {
             epd_draw_rect(checkboxXPos, checkboxYPos, checkboxSize, checkboxSize - 5, 0x0000, framebuffer); // Outer checkbox
         }
         // Draw to-do item text inside the to-do rectangle
-        xPos = 120;
+        xPos = 75;
         int textYPos = yPos + (rectHeight / 2) + 5; // Center text vertically within the to-do rectangle
         write_string((GFXfont *)&FiraSans, topics[topicIndex].todoList[i].task.c_str(), &xPos, &textYPos, framebuffer);
-        epd_draw_rect(40, yPos - 10, rectWidth, rectHeight, 0x0000, framebuffer); // Draw rectangle around each item
+        epd_draw_rect(15, yPos - 10, rectWidth, rectHeight, 0x0000, framebuffer); // Draw rectangle around each item
         yPos += rectHeight + gap;
+    }
+
+    epd_draw_grayscale_image(epd_full_screen(), framebuffer);
+    epd_poweroff();
+}
+
+void displayCalendar() {
+    currentPage = 2;
+    clearDisplay();
+
+    // Get the current time
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+        Serial.println("Failed to obtain time");
+        return;
+    }
+
+    // Get the current year, month, and day
+    int year = timeinfo.tm_year + 1900;
+    int month = timeinfo.tm_mon + 1;
+    int today = timeinfo.tm_mday;
+
+    // Calculate the number of days in the current month
+    int daysInMonth = 31;
+    if (month == 4 || month == 6 || month == 9 || month == 11) {
+        daysInMonth = 30;
+    } else if (month == 2) {
+        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+            daysInMonth = 29;
+        } else {
+            daysInMonth = 28;
+        }
+    }
+
+    // Draw back button
+    int xPos = 890;
+    int yBackPos = 275;
+    write_string((GFXfont *)&FiraSans, "✔️", &xPos, &yBackPos, framebuffer);
+    epd_draw_rect(860, 0, 100, EPD_HEIGHT, 0x0000, framebuffer);
+
+    // Calculate the day of the week for the first day of the month
+    struct tm firstDayOfMonth = {0};
+    firstDayOfMonth.tm_year = year - 1900;
+    firstDayOfMonth.tm_mon = month - 1;
+    firstDayOfMonth.tm_mday = 1;
+    mktime(&firstDayOfMonth);
+    int firstDayOfWeek = firstDayOfMonth.tm_wday;
+    if (firstDayOfWeek == 0) {
+        firstDayOfWeek = 7;
+    }
+
+    // Draw the calendar header
+    int xHeaderPos = 15;
+    int yHeaderPos = 20;
+    int headerWidth = 835;
+    int headerHeight = 80;
+    epd_draw_rect(xHeaderPos, yHeaderPos, headerWidth, headerHeight, 0x0000, framebuffer);
+
+    char headerStr[64];
+    strftime(headerStr, sizeof(headerStr), "%B %Y", &timeinfo);
+    int xHeaderTextPos = 350;
+    int yHeaderTextPos = 70;
+    write_string((GFXfont *)&FiraSans, String(headerStr).c_str(), &xHeaderTextPos, &yHeaderTextPos, framebuffer);
+
+    // Draw the days of the week
+    const char *daysOfWeek[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    int xDayPos = 15;
+    int yDayPos = 120;
+    for (int i = 0; i < 7; i++) {
+        int xTextPos = xDayPos + i * 118 + 5;
+        int yTextPos = yDayPos + 40;
+        write_string((GFXfont *)&FiraSans, daysOfWeek[i], &xTextPos, &yTextPos, framebuffer);
+    }
+
+    // Draw the days of the month
+    int xDayRectPos = 15;
+    int yDayRectPos = 155;
+    const int dayRectWidth = 100;
+    const int dayRectHeight = 60;
+    const int dayGap = 17;
+
+    int currentDay = 1;
+    for (int i = 0; i < 6; i++) { // 6 weeks in a month
+        for (int j = 0; j < 7; j++) { // 7 days a week
+            if (i == 0 && j < firstDayOfWeek - 1) {
+                continue;
+            }
+            if (currentDay > daysInMonth) {
+                break;
+            }
+
+            int xRectPos = xDayRectPos + j * (dayRectWidth + dayGap);
+            int yRectPos = yDayRectPos + i * (dayRectHeight + dayGap);
+
+            int xTextPos = xRectPos + 25;
+            int yTextPos = yRectPos + 50;
+            char dayStr[3];
+            sprintf(dayStr, "%d", currentDay);
+            write_string((GFXfont *)&FiraSans, dayStr, &xTextPos, &yTextPos, framebuffer);
+
+            // Highlight today's date
+            if (currentDay == today) {
+                epd_draw_rect(xRectPos, yRectPos + 12, dayRectWidth - 25, dayRectHeight - 10, 0xF800, framebuffer); // Red border
+            }
+
+            currentDay++;
+        }
     }
 
     epd_draw_grayscale_image(epd_full_screen(), framebuffer);
@@ -355,7 +459,14 @@ void displayTodoListPage(int topicIndex)
 void toggleTodoItem(int topicIndex, int itemIndex)
 {
     topics[topicIndex].todoList[itemIndex].done = !topics[topicIndex].todoList[itemIndex].done;
+
+    // Sort the todoList to move completed tasks to the end
+    std::sort(topics[topicIndex].todoList.begin(), topics[topicIndex].todoList.end(), [](const TodoItem &a, const TodoItem &b) {
+        return !a.done && b.done;
+    });
+
     saveTodosToSD();
+
     displayTodoListPage(topicIndex);
 }
 
@@ -367,6 +478,12 @@ void loop()
         if (touchReleased) {
             touchReleased = false;
             Serial.printf("Touch detected at: X:%d Y:%d\n", x, y);
+
+            // Check if the title date rectangle is pressed
+            if (currentPage == 0 && x >= 15 && x <= 945 && y >= 20 && y <= 100) {
+                displayCalendar();
+                return;
+            }
 
             if (currentPage == 0) {
                 // Main page
@@ -386,16 +503,16 @@ void loop()
                         yPos += rectHeight + gap;
                     }
                 }
-            } else {
+            } else if (currentPage == 1) {
                 // To-do list page
                 if (x >= 860 && x <= 960 && y >= 0 && y <= EPD_HEIGHT) {
                     displayMainPage();
                     return;
                 }
                 // Check if any to-do item rectangle was pressed
-                int yPos = (EPD_HEIGHT - (topics[currentTopic].todoList.size() * 60 + (topics[currentTopic].todoList.size() - 1) * 20)) / 2;
+                int yPos = 20; // Start from the top
                 const int rectHeight = 60;
-                const int gap = 20;
+                const int gap = 15;
                 for (size_t i = 0; i < topics[currentTopic].todoList.size(); i++) {
                     int rectYMin = yPos - 10;
                     int rectYMax = rectYMin + rectHeight;
@@ -404,6 +521,12 @@ void loop()
                         return;
                     }
                     yPos += rectHeight + gap;
+                }
+            } else if (currentPage == 2) {
+                // Calendar page
+                if (x >= 860 && x <= 960 && y >= 0 && y <= EPD_HEIGHT) {
+                    displayMainPage();
+                    return;
                 }
             }
         }

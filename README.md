@@ -5,6 +5,10 @@
 ![photo_2024-07-29_14-26-06.jpg](images/photo_2024-07-29_14-26-06.jpg)
 ![photo_2024-07-29_14-26-11.jpg](images/photo_2024-07-29_14-26-11.jpg)
 ![photo_2024-07-29_14-26-09.jpg](images/photo_2024-07-29_14-26-09.jpg)
+![photo_2024-07-29_14-26-09.jpg](images/photo_2024-08-05_12-57-47.jpg)
+
+### 05/08/2024
+- added calendar page
 
 ### 29/07/2024
 - todo list with SD datastorage and open API under http://showorld.local/todo
